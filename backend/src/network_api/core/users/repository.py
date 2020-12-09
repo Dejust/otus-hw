@@ -1,7 +1,7 @@
 from aiomysql import DictCursor
 from pymysql import IntegrityError
 
-from network_api.core.users.models import User, HashedCredentials, Profile
+from network_api.core.users.models import User, HashedCredentials, Profile, SearchCriteria
 
 
 class UserRepository:
@@ -56,10 +56,37 @@ class UserRepository:
             raise self.NotFound()
         return map_user(row)
 
-    async def get_all(self):
-        await self._db_cursor.execute('SELECT * FROM users')
+    async def get_all(self, *, criteria: SearchCriteria = None):
+        query = 'SELECT * FROM users'
+
+        criteria = self._search_criteria_to_query(criteria)
+        if criteria:
+            search_query, params = criteria
+            query += f' WHERE {search_query}'
+        else:
+            params = {}
+
+        await self._db_cursor.execute(query, params)
         rows = await self._db_cursor.fetchall()
         return [map_user(row) for row in rows]
+
+    def _search_criteria_to_query(self, criteria: SearchCriteria = None):
+        if criteria is None:
+            return None
+
+        criteria_query = []
+        params = {}
+        if criteria.first_name_prefix:
+            criteria_query.append('first_name LIKE %(first_name_prefix)s')
+            params['first_name_prefix'] = criteria.first_name_prefix + '%'
+        if criteria.last_name_prefix:
+            criteria_query.append('last_name LIKE %(last_name_prefix)s')
+            params['last_name_prefix'] = criteria.last_name_prefix + '%'
+
+        if criteria_query:
+            return ' AND '.join(criteria_query), params
+        else:
+            return None
 
 
 def map_user(row: dict) -> User:

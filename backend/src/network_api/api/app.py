@@ -10,7 +10,7 @@ from network_api import jwt
 from network_api.api.deps import setup_db, close_db, get_users_repository, get_friends_repository
 from network_api.core.friends.models import Friend
 from network_api.core.friends.repository import FriendsRepository
-from network_api.core.users.models import Credentials, Profile, User
+from network_api.core.users.models import Credentials, Profile, User, SearchCriteria
 from network_api.core.users.repository import UserRepository
 
 auth = APIRouter()
@@ -77,8 +77,12 @@ async def auth_login(credentials: Credentials, users_repository: UserRepository 
 
 
 @users.get('/')
-async def get_users(users_repository: UserRepository = Depends(get_users_repository)) -> List[User]:
-    user_list = await users_repository.get_all()
+async def get_users(
+    first_name_prefix: str = None, last_name_prefix: str = None,
+    users_repository: UserRepository = Depends(get_users_repository)
+) -> List[User]:
+    criteria = SearchCriteria(first_name_prefix=first_name_prefix, last_name_prefix=last_name_prefix)
+    user_list = await users_repository.get_all(criteria=criteria)
     return user_list
 
 

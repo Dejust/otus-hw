@@ -73,3 +73,8 @@ class User(BaseModel):
     def add_credentials(self, credentials: Credentials) -> HashedCredentials:
         self.credentials = HashedCredentials.create_from(credentials)
         return self.credentials
+
+
+class SearchCriteria(BaseModel):
+    first_name_prefix: str = None
+    last_name_prefix: str = None
