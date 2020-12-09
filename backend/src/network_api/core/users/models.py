@@ -78,3 +78,14 @@ class User(BaseModel):
 class SearchCriteria(BaseModel):
     first_name_prefix: str = None
     last_name_prefix: str = None
+
+
+default_search_criteria = SearchCriteria()
+
+
+class Page(BaseModel):
+    limit: int = 10
+    offset: int = 0
+
+
+default_page = Page()
