@@ -74,7 +74,7 @@ class UserRepository:
         rows = await self._db_cursor.fetchall()
         return [map_user(row) for row in rows]
 
-    def _search_criteria_to_query(self, criteria: SearchCriteria = None):
+    def _search_criteria_to_query(self, criteria: SearchCriteria):
         criteria_query = []
         params = {}
         if criteria.first_name_prefix:
