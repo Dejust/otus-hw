@@ -67,7 +67,7 @@ class UserRepository:
         else:
             params = {}
 
-        query += ' LIMIT %(limit)s OFFSET %(offset)s'
+        query += ' ORDER BY id LIMIT %(limit)s OFFSET %(offset)s'
         params.update(page.dict())
 
         await self._db_cursor.execute(query, params)
