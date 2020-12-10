@@ -1,4 +1,5 @@
 import asyncio
+import random
 
 from faker import Faker
 
@@ -16,15 +17,25 @@ def generate_email(batch_idx, row_idx):
 
 
 async def generate_fake_users(cursor):
-    batch = [('first_name', 'last_name', 'foo@example.com')] * ROWS_NUMBER
-
+    batch = [('first_name', 'last_name', 'foo@example.com', 10, 'MSK', '', 'f', '')] * ROWS_NUMBER
+    genders = ['f', 'm']
     for batch_idx in range(BATCH_NUMBER):
         print('generate')
         for row_idx in range(ROWS_NUMBER):
-            batch[row_idx] = (faker.first_name(), faker.last_name(), generate_email(batch_idx, row_idx))
+            batch[row_idx] = (
+                faker.first_name(),
+                faker.last_name(),
+                generate_email(batch_idx, row_idx),
+                faker.pyint(1, 10),
+                faker.city(),
+                '',
+                random.choice(genders),
+                ''
+            )
 
         print('execute')
-        q = 'INSERT INTO users (first_name, last_name, email) VALUES (%s, %s, %s)'
+        q = 'INSERT INTO users (first_name, last_name, email, age, city, interests, gender, password_hash) ' \
+            'VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'
 
         await cursor.executemany(q, batch)
         print(batch_idx, '/', BATCH_NUMBER)
