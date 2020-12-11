@@ -1,0 +1,35 @@
+version: '2.2'
+services:
+  api:
+    command: "uvicorn network_api.asgi:app --limit-concurrency 50 --lifespan on --host 0.0.0.0 --port 8080"
+    build:
+      context: backend
+      dockerfile: compose/Dockerfile
+
+    volumes:
+      - ./backend/src:/var/lib/network-api/src
+
+    env_file:
+      - backend/compose/dev/app.env
+    restart: always
+    cpus: 0.9
+    mem_limit: "67108864"
+  db:
+    image: mysql:5.7.32
+    env_file:
+      - backend/compose/dev/db.env
+    restart: always
+    cpus: 0.25
+    mem_limit: "268435456"
+  frontend:
+    cpus: 0.25
+    restart: always
+    mem_limit: "67108864"
+    depends_on:
+      - api
+    image: nginx:1.18.0-alpine
+    ports:
+      - 8083:80
+    volumes:
+      - ./frontend/src:/usr/share/nginx/html:ro
+      - ./frontend/compose/default.conf:/etc/nginx/conf.d/default.conf
