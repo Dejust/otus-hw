@@ -77,12 +77,14 @@ class UserRepository:
     def _search_criteria_to_query(self, criteria: SearchCriteria):
         criteria_query = []
         params = {}
-        if criteria.first_name_prefix:
-            criteria_query.append('first_name LIKE %(first_name_prefix)s')
-            params['first_name_prefix'] = criteria.first_name_prefix + '%'
+
         if criteria.last_name_prefix:
             criteria_query.append('last_name LIKE %(last_name_prefix)s')
             params['last_name_prefix'] = criteria.last_name_prefix + '%'
+
+        if criteria.first_name_prefix:
+            criteria_query.append('first_name LIKE %(first_name_prefix)s')
+            params['first_name_prefix'] = criteria.first_name_prefix + '%'
 
         if criteria_query:
             return ' AND '.join(criteria_query), params
