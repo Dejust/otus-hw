@@ -3,14 +3,19 @@ function UsersComponent(api) {
     data: function () {
       return {
         users: [],
-        debug: {}
+        debug: {},
+        search: {
+          first_name_prefix: null,
+          last_name_prefix: null
+        }
       }
     },
 
     methods: {
       refresh: function () {
         this.debug = {'loadUsers': '/users'}
-        api.get('/users/')
+        let params = this.search;
+        api.get('/users/', {params: params})
           .then(response => {
             this.users = response.data;
             this.debug = {'loadUsers': 'success'}
