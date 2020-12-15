@@ -222,3 +222,16 @@ def test_search_users(api_client):
     response = api_client.get(request)
     assert response.status_code == 200
     assert response.json()[0]['profile'] == user_a['profile']
+
+
+def test_users_pagination(api_client):
+    user_a = build_register_request()
+    _ = register_user(api_client, user_a)
+
+    response = api_client.get('/users?limit=10&offset=0')
+    assert response.status_code == 200, response.json()
+    assert len(response.json()) == 1
+
+    response = api_client.get('/users?limit=10&offset=1')
+    assert response.status_code == 200
+    assert len(response.json()) == 0

@@ -1,7 +1,8 @@
 from aiomysql import DictCursor
 from pymysql import IntegrityError
 
-from network_api.core.users.models import User, HashedCredentials, Profile, SearchCriteria
+from network_api.core.users.models import User, HashedCredentials, Profile, SearchCriteria, default_search_criteria, \
+    Page, default_page
 
 
 class UserRepository:
@@ -56,7 +57,7 @@ class UserRepository:
             raise self.NotFound()
         return map_user(row)
 
-    async def get_all(self, *, criteria: SearchCriteria = None):
+    async def get_all(self, *, criteria: SearchCriteria = default_search_criteria, page: Page = default_page):
         query = 'SELECT * FROM users'
 
         criteria = self._search_criteria_to_query(criteria)
@@ -66,14 +67,14 @@ class UserRepository:
         else:
             params = {}
 
+        query += ' ORDER BY id LIMIT %(limit)s OFFSET %(offset)s'
+        params.update(page.dict())
+
         await self._db_cursor.execute(query, params)
         rows = await self._db_cursor.fetchall()
         return [map_user(row) for row in rows]
 
-    def _search_criteria_to_query(self, criteria: SearchCriteria = None):
-        if criteria is None:
-            return None
-
+    def _search_criteria_to_query(self, criteria: SearchCriteria):
         criteria_query = []
         params = {}
         if criteria.first_name_prefix:
