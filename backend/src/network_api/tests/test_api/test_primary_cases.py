@@ -204,3 +204,34 @@ def test_get_friends(api_client):
     assert response.status_code == 200
     assert [x['source_user']['profile'] for x in response.json()] == [user_a['profile']] * 2
     assert [x['target_user']['profile'] for x in response.json()] == [user_b['profile'], user_c['profile']]
+
+
+def test_search_users(api_client):
+    user_a = build_register_request()
+    _ = register_user(api_client, user_a)
+
+    response = api_client.get('/users?first_name_prefix=-1&last_name_prefix=-1')
+    assert response.status_code == 200
+    assert response.json() == []
+
+    request = '/users?first_name_prefix={}&last_name_prefix={}'.format(
+        user_a['profile']['first_name'][:-2],
+        user_a['profile']['last_name'][:-2]
+    )
+
+    response = api_client.get(request)
+    assert response.status_code == 200
+    assert response.json()[0]['profile'] == user_a['profile']
+
+
+def test_users_pagination(api_client):
+    user_a = build_register_request()
+    _ = register_user(api_client, user_a)
+
+    response = api_client.get('/users?limit=10&offset=0')
+    assert response.status_code == 200, response.json()
+    assert len(response.json()) == 1
+
+    response = api_client.get('/users?limit=10&offset=1')
+    assert response.status_code == 200
+    assert len(response.json()) == 0

@@ -1,7 +1,8 @@
 from functools import partial
-from typing import List
+from typing import List, Optional
 
 from fastapi import FastAPI, APIRouter, Depends, HTTPException
+from fastapi.params import Query
 from fastapi.security import OAuth2PasswordBearer
 from jwt import PyJWTError
 from pydantic import BaseModel
@@ -10,7 +11,7 @@ from network_api import jwt
 from network_api.api.deps import setup_db, close_db, get_users_repository, get_friends_repository
 from network_api.core.friends.models import Friend
 from network_api.core.friends.repository import FriendsRepository
-from network_api.core.users.models import Credentials, Profile, User
+from network_api.core.users.models import Credentials, Profile, User, SearchCriteria, Page
 from network_api.core.users.repository import UserRepository
 
 auth = APIRouter()
@@ -77,8 +78,16 @@ async def auth_login(credentials: Credentials, users_repository: UserRepository 
 
 
 @users.get('/')
-async def get_users(users_repository: UserRepository = Depends(get_users_repository)) -> List[User]:
-    user_list = await users_repository.get_all()
+async def get_users(
+    first_name_prefix: Optional[str] = Query(default=None, max_length=255),
+    last_name_prefix: Optional[str] = Query(default=None, max_length=255),
+    limit: Optional[int] = Query(default=10, ge=0, le=20),
+    offset: Optional[int] = Query(default=0, ge=0, le=20),
+    users_repository: UserRepository = Depends(get_users_repository)
+) -> List[User]:
+    criteria = SearchCriteria(first_name_prefix=first_name_prefix, last_name_prefix=last_name_prefix)
+    page = Page(limit=limit, offset=offset)
+    user_list = await users_repository.get_all(criteria=criteria, page=page)
     return user_list
 
 
