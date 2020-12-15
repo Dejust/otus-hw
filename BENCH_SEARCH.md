@@ -1,4 +1,11 @@
-# Общее
+# Table of Contents
+1. [Тестовый стенд](#common)
+2. [Тест до индекса](#before)
+3. [Создание индекса](#introduce_index)
+4. [После индекса](#after)
+
+
+# <a name="common"/> Тестовый стенд
 
 Стенд: VDS 512 МБ + 1vCPU
 
@@ -40,7 +47,9 @@ end
 
 ```
 
-## Результаты до индекса
+# Результаты нагрузочного тестирования до индекса <a name="before"></a>
+
+![plot](./Before%20index.png)
 
 ```
 Running 30s test @ http://31.184.253.155:8083/
@@ -161,7 +170,7 @@ Transfer/sec:      51.64B
 
 ```
 
-# Ввели индекс
+# Создание индекса <a name="introduce_index"></a>
 
 ```
 CREATE INDEX name_index ON users (last_name, first_name);
@@ -183,7 +192,31 @@ mysql> EXPLAIN SELECT * FROM users WHERE last_name = 'Bb' and first_name = 'Aa';
 1 row in set, 1 warning (0.00 sec)
 ``` 
 
-Результаты тестов
+
+Индекс по (last_name, first_name) обладает большей селективностью, поэтому эффективней, чем (first_name, last_name):
+
+```
+Database changed
+mysql> select count(distinct first_name) from users;
++----------------------------+
+| count(distinct first_name) |
++----------------------------+
+|                        695 |
++----------------------------+
+1 row in set (2.08 sec)
+
+mysql> select count(distinct last_name) from users;
++---------------------------+
+| count(distinct last_name) |
++---------------------------+
+|                      1005 |
++---------------------------+
+1 row in set (2.21 sec)
+```
+
+# Результаты нагрузочного тестирования с индексом <a name="after"></a>
+
+![plot](./After%20index.png)
 
 ```
 Running 30s test @ http://31.184.253.155:8083/
