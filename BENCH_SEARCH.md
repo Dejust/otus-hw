@@ -1,10 +1,3 @@
-# Table of Contents
-1. [Тестовый стенд](#common)
-2. [Тест до индекса](#before)
-3. [Создание индекса](#introduce_index)
-4. [После индекса](#after)
-
-
 # <a name="common"/> Тестовый стенд
 
 Стенд: VDS 512 МБ + 1vCPU
