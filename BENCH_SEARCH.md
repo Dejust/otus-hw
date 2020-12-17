@@ -277,12 +277,13 @@ mysql> create index last_name_index on users (last_name);
 Query OK, 0 rows affected (9.76 sec)
 Records: 0  Duplicates: 0  Warnings: 0
 
-mysql> explain select * from users where first_name = "Ab" and last_name = "F" ;
-+----+-------------+-------+------------+------+----------------------------------+------------------+---------+-------+------+----------+-------------+
-| id | select_type | table | partitions | type | possible_keys                    | key              | key_len | ref   | rows | filtered | Extra       |
-+----+-------------+-------+------------+------+----------------------------------+------------------+---------+-------+------+----------+-------------+
-|  1 | SIMPLE      | users | NULL       | ref  | first_name_index,last_name_index | first_name_index | 258     | const |    1 |     5.00 | Using where |
-+----+-------------+-------+------------+------+----------------------------------+------------------+---------+-------+------+----------+-------------+
+mysql> explain select first_name, last_name from users where last_name = "Bb" and first_name = "Aa";
++----+-------------+-------+------------+------+----------------------------------+-----------------+---------+-------+------+----------+-------------+
+| id | select_type | table | partitions | type | possible_keys                    | key             | key_len | ref   | rows | filtered | Extra       |
++----+-------------+-------+------------+------+----------------------------------+-----------------+---------+-------+------+----------+-------------+
+|  1 | SIMPLE      | users | NULL       | ref  | last_name_index,first_name_index | last_name_index | 258     | const |    1 |     5.00 | Using where |
++----+-------------+-------+------------+------+----------------------------------+-----------------+---------+-------+------+----------+-------------+
+
 1 row in set, 1 warning (0.02 sec)
 
 mysql> explain select * from users where first_name = "Ab" ;
