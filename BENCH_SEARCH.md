@@ -438,11 +438,11 @@ Transfer/sec:     29.68KB
 
 В случае композитного индекса при выполнении запроса применен именно он. В случае двух индексов - только индекс по last_name. 
 
-Далее представлен детальный explain при использовании обоих индексов.
+Далее представлен детальный explain при использовании обоих индексов из которых видно, что не смотря на разную стратегию, оба индекса обладают почти одинаковой "стоимостью". Поэтому, для данного запроса, имеет смысл использовать индекс по last_name, так как он обладает меньшими запросами.
 
 ### Композитный индекс
 
-Применяется только одна часть композитного индекса - last_name. MySQL не использует вторую часть first_name.
+Применяется только одна часть композитного индекса - last_name. Это информация используется далее для извлечения остальной информации (Index Condition Pushdown)..
 
 ```
 explain format = json SELECT * FROM users use index (name_index) WHERE last_name LIKE "B%" AND first_name LIKE "A%";
@@ -492,7 +492,7 @@ explain format = json SELECT * FROM users use index (name_index) WHERE last_name
 
 ### Индекс last_name
 
-Применяется индекс по last_name. Эта информация используется для дальнейшей фильтрации по first_name (Index Condition Pushdown).
+Применяется индекс по last_name. Эта информация используется для дальнейшей фильтрации по first_name и извлечения остальной информации (Index Condition Pushdown).
 
 ```
 explain format = json SELECT * FROM users use index (first_name) WHERE last_name LIKE "B%" AND first_name LIKE "A%";
@@ -535,4 +535,65 @@ explain format = json SELECT * FROM users use index (first_name) WHERE last_name
   }
 } |
 
+```
+
+## Идеи для дальнейшей оптимизации. Покрывающий индекс.
+
+Необходимо упростить запрос так, чтобы все данные извлекались из индекса:
+
+```
+SELECT id, first_name, last_name FROM users WHERE last_name LIKE "X%" AND first_name LIKE "Y%"
+```
+
+В этом случае, комопзитный индекс покажет себя очень красиво:
+
+```
+mysql> explain SELECT id, first_name, last_name FROM users use index (name_index) WHERE last_name LIKE "B%" AND first_name LIKE "A%";
++----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+--------------------------+
+| id | select_type | table | partitions | type  | possible_keys | key        | key_len | ref  | rows   | filtered | Extra                    |
++----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+--------------------------+
+|  1 | SIMPLE      | users | NULL       | range | name_index    | name_index | 516     | NULL | 153624 |    11.11 | Using where; Using index |
++----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+--------------------------+
+1 row in set, 1 warning (0.00 sec)
+```
+
+Using index указывает на то, что данные будут взяты из самого индекса.  Стоимость запроса в данном случае будет ниже:
+
+```
+{
+  "query_block": {
+    "select_id": 1,
+    "cost_info": {
+      "query_cost": "71052.05"
+    },
+    "table": {
+      "table_name": "users",
+      "access_type": "range",
+      "possible_keys": [
+        "name_index"
+      ],
+      "key": "name_index",
+      "used_key_parts": [
+        "last_name"
+      ],
+      "key_length": "516",
+      "rows_examined_per_scan": 153624,
+      "rows_produced_per_join": 17067,
+      "filtered": "11.11",
+      "using_index": true,
+      "cost_info": {
+        "read_cost": "67638.52",
+        "eval_cost": "3413.53",
+        "prefix_cost": "71052.05",
+        "data_read_per_join": "29M"
+      },
+      "used_columns": [
+        "id",
+        "first_name",
+        "last_name"
+      ],
+      "attached_condition": "((`network`.`users`.`last_name` like 'B%') and (`network`.`users`.`first_name` like 'A%'))"
+    }
+  }
+}
 ```
