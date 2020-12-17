@@ -597,3 +597,277 @@ Using index указывает на то, что данные будут взя�
   }
 }
 ```
+
+# Результаты тестирования. Покрывающий индекс.
+
+```
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 1 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 1 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    32.57ms    1.70ms  50.09ms   94.39%
+    Req/Sec    30.23      4.34    40.00     84.00%
+  Latency Distribution
+     50%   32.19ms
+     75%   32.62ms
+     90%   33.43ms
+     99%   40.35ms
+  303 requests in 10.03s, 45.85KB read
+Requests/sec:     30.22
+Transfer/sec:      4.57KB
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 10 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 10 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    38.59ms    7.82ms 108.06ms   94.65%
+    Req/Sec   258.00     38.41   300.00     89.00%
+  Latency Distribution
+     50%   36.90ms
+     75%   38.97ms
+     90%   41.79ms
+     99%   79.04ms
+  2571 requests in 10.01s, 389.07KB read
+Requests/sec:    256.92
+Transfer/sec:     38.88KB
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 100 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   367.44ms  141.30ms   1.13s    74.08%
+    Req/Sec   269.20     46.03   430.00     83.84%
+  Latency Distribution
+     50%  360.57ms
+     75%  389.78ms
+     90%  580.44ms
+     99%  843.81ms
+  2665 requests in 10.02s, 404.12KB read
+Requests/sec:    266.05
+Transfer/sec:     40.34KB
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 250 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 250 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   920.61ms  655.20ms   4.29s    49.42%
+    Req/Sec   262.14     40.60   310.00     82.65%
+  Latency Distribution
+     50%  935.00ms
+     75%    1.16s 
+     90%    1.77s 
+     99%    2.62s 
+  2580 requests in 10.03s, 390.58KB read
+Requests/sec:    257.34
+Transfer/sec:     38.96KB
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 500 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 500 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.77s     1.03s    6.14s    68.06%
+    Req/Sec   257.19     54.02   320.00     89.69%
+  Latency Distribution
+     50%    1.89s 
+     75%    1.92s 
+     90%    3.63s 
+     99%    4.12s 
+  2505 requests in 10.06s, 379.17KB read
+Requests/sec:    249.00
+Transfer/sec:     37.69KB
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 750 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 750 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.92s     1.18s    6.93s    72.87%
+    Req/Sec   246.66     64.36   313.00     90.59%
+  Latency Distribution
+     50%    1.64s 
+     75%    2.60s 
+     90%    3.49s 
+     99%    5.12s 
+  2123 requests in 10.04s, 321.86KB read
+  Socket errors: connect 0, read 3696, write 0, timeout 0
+Requests/sec:    211.53
+Transfer/sec:     32.07KB
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 1000 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 1000 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.35s     1.08s    8.83s    81.80%
+    Req/Sec   214.48     76.54   303.00     72.22%
+  Latency Distribution
+     50%    2.12s 
+     75%    3.03s 
+     90%    3.19s 
+     99%    4.98s 
+  1934 requests in 10.10s, 293.51KB read
+  Socket errors: connect 0, read 3087, write 0, timeout 0
+Requests/sec:    191.49
+Transfer/sec:     29.06KB
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 2000 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 2000 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.01s     1.09s    7.73s    72.57%
+    Req/Sec   243.08     59.13   313.00     88.89%
+  Latency Distribution
+     50%    2.02s 
+     75%    2.05s 
+     90%    3.64s 
+     99%    5.10s 
+  2198 requests in 10.04s, 332.71KB read
+  Socket errors: connect 980, read 2665, write 0, timeout 0
+Requests/sec:    218.98
+Transfer/sec:     33.15KB
+```
+
+### Результаты тестов без индекса. После оптимизации запроса.
+
+```
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 1 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 1 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.81s   742.73ms   3.13s    80.00%
+    Req/Sec     0.00      0.00     0.00    100.00%
+  Latency Distribution
+     50%    1.47s 
+     75%    1.61s 
+     90%    3.13s 
+     99%    3.13s 
+  5 requests in 10.02s, 775.00B read
+Requests/sec:      0.50
+Transfer/sec:      77.33B
+```
+
+### Результаты тесты два индекса (last_name, first_name). После оптимизации запроса.
+
+```
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 1 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 1 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    34.10ms    8.94ms 142.82ms   96.31%
+    Req/Sec    29.55      5.25    40.00     79.80%
+  Latency Distribution
+     50%   32.48ms
+     75%   33.47ms
+     90%   34.94ms
+     99%   78.35ms
+  294 requests in 10.02s, 44.49KB read
+Requests/sec:     29.36
+Transfer/sec:      4.44KB
+
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 10 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 10 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    48.76ms   23.63ms 319.96ms   92.32%
+    Req/Sec   210.21     48.34   282.00     59.00%
+  Latency Distribution
+     50%   41.99ms
+     75%   51.59ms
+     90%   66.10ms
+     99%  138.69ms
+  2096 requests in 10.02s, 317.48KB read
+Requests/sec:    209.27
+Transfer/sec:     31.70KB
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 100 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   401.88ms  172.92ms   1.63s    71.40%
+    Req/Sec   244.62     51.90   313.00     69.00%
+  Latency Distribution
+     50%  387.55ms
+     75%  464.21ms
+     90%  607.14ms
+     99%  907.62ms
+  2438 requests in 10.01s, 370.24KB read
+Requests/sec:    243.53
+Transfer/sec:     36.98KB
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 250 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 250 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   967.81ms  638.01ms   4.41s    58.88%
+    Req/Sec   246.21     58.96   313.00     89.00%
+  Latency Distribution
+     50%  979.54ms
+     75%    1.06s 
+     90%    1.84s 
+     99%    2.72s 
+  2458 requests in 10.04s, 372.06KB read
+Requests/sec:    244.91
+Transfer/sec:     37.07KB
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 500 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 500 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.06s     1.31s    9.21s    69.76%
+    Req/Sec   211.64     65.32   290.00     81.25%
+  Latency Distribution
+     50%    2.11s 
+     75%    2.78s 
+     90%    3.53s 
+     99%    6.27s 
+  2051 requests in 10.05s, 310.51KB read
+Requests/sec:    204.09
+Transfer/sec:     30.90KB
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 750 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 750 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.19s     1.37s    9.02s    69.32%
+    Req/Sec   203.08     69.25   313.00     71.91%
+  Latency Distribution
+     50%    1.96s 
+     75%    3.08s 
+     90%    3.82s 
+     99%    5.99s 
+  1819 requests in 10.10s, 275.45KB read
+  Socket errors: connect 0, read 2997, write 0, timeout 0
+Requests/sec:    180.08
+Transfer/sec:     27.27KB
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 1000 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 1000 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.26s     1.37s    7.84s    71.80%
+    Req/Sec   205.91     73.24   515.00     70.79%
+  Latency Distribution
+     50%    2.23s 
+     75%    2.64s 
+     90%    4.12s 
+     99%    7.15s 
+  1851 requests in 10.01s, 280.44KB read
+  Socket errors: connect 0, read 3159, write 0, timeout 0
+Requests/sec:    184.82
+Transfer/sec:     28.00KB
+dejust@dejust-labs:~/otus-hw$ wrk -s bench_search.lua -d 10s -t 1 -c 2000 --timeout 10s --latency http://31.184.253.155:8083/
+Running 10s test @ http://31.184.253.155:8083/
+  1 threads and 2000 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.26s     1.52s    9.71s    63.56%
+    Req/Sec   205.60     74.35   505.00     78.02%
+  Latency Distribution
+     50%    2.33s 
+     75%    2.66s 
+     90%    4.38s 
+     99%    6.69s 
+  1869 requests in 10.02s, 282.91KB read
+  Socket errors: connect 980, read 2740, write 0, timeout 0
+Requests/sec:    186.60
+Transfer/sec:     28.24KB
+```
+
+# Итог 2
+
+Была проведена оптимизация, которая позволяет применить покрывающий композитный индекс. В результате видно, что удалось
+добиться прироста по пропускной способности и уменьшить задержки по сравнению с обычным композитным индексом 
+и индексом по last_name (из рассуждений выше => MySQL использует только один из двух индексов first_name или last_name). 
+
+## Average Latency
+
+![plot](./Latency3.png)
+
+## Throughput
+
+![plot](./Throuput3.png)
