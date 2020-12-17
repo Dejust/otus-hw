@@ -91,31 +91,28 @@ WHERE last_name = "Ab%" and first_name = "Bb%"
 Но не покрывает запросы только на имя пользователя.
 
 ```
-CREATE INDEX name_index ON users (last_name, first_name);
+mysql> explain select first_name, last_name from users where last_name LIKE "A%" and first_name LIKE "B%";
++----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+--------------------------+
+| id | select_type | table | partitions | type  | possible_keys | key        | key_len | ref  | rows  | filtered | Extra                    |
++----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+--------------------------+
+|  1 | SIMPLE      | users | NULL       | range | name_index    | name_index | 516     | NULL | 74184 |    11.11 | Using where; Using index |
++----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+--------------------------+
 
-mysql> EXPLAIN SELECT * FROM users WHERE first_name = 'Ab%' AND last_name = 'Bb%';
-+----+-------------+-------+------------+------+---------------+------------+---------+-------------+------+----------+-------+
-| id | select_type | table | partitions | type | possible_keys | key        | key_len | ref         | rows | filtered | Extra |
-+----+-------------+-------+------------+------+---------------+------------+---------+-------------+------+----------+-------+
-|  1 | SIMPLE      | users | NULL       | ref  | name_index    | name_index | 516     | const,const |    1 |   100.00 | NULL  |
-+----+-------------+-------+------------+------+---------------+------------+---------+-------------+------+----------+-------+
-1 row in set, 1 warning (0.01 sec)
 
-mysql> explain select * from users where first_name = "Ab%" ;
-+----+-------------+-------+------------+------+---------------+------+---------+------+--------+----------+-------------+
-| id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows   | filtered | Extra       |
-+----+-------------+-------+------------+------+---------------+------+---------+------+--------+----------+-------------+
-|  1 | SIMPLE      | users | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 995835 |    10.00 | Using where |
-+----+-------------+-------+------------+------+---------------+------+---------+------+--------+----------+-------------+
+mysql> explain select first_name, last_name from users where last_name LIKE "A%";
++----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+--------------------------+
+| id | select_type | table | partitions | type  | possible_keys | key        | key_len | ref  | rows  | filtered | Extra                    |
++----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+--------------------------+
+|  1 | SIMPLE      | users | NULL       | range | name_index    | name_index | 258     | NULL | 74184 |   100.00 | Using where; Using index |
++----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+--------------------------+
 1 row in set, 1 warning (0.00 sec)
 
-mysql> explain select * from users where last_name = "Ab%" ;
-+----+-------------+-------+------------+------+---------------+------------+---------+-------+------+----------+-------+
-| id | select_type | table | partitions | type | possible_keys | key        | key_len | ref   | rows | filtered | Extra |
-+----+-------------+-------+------------+------+---------------+------------+---------+-------+------+----------+-------+
-|  1 | SIMPLE      | users | NULL       | ref  | name_index    | name_index | 258     | const |    1 |   100.00 | NULL  |
-+----+-------------+-------+------------+------+---------------+------------+---------+-------+------+----------+-------+
-1 row in set, 1 warning (0.00 sec)
+mysql> explain select first_name, last_name from users where first_name LIKE "A%";
++----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+--------------------------+
+| id | select_type | table | partitions | type  | possible_keys | key        | key_len | ref  | rows   | filtered | Extra                    |
++----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+--------------------------+
+|  1 | SIMPLE      | users | NULL       | index | NULL          | name_index | 516     | NULL | 995835 |    11.11 | Using where; Using index |
++----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+--------------------------+
 ``` 
 
 Количество уникальных имен и фамилий:
@@ -269,38 +266,30 @@ Transfer/sec:     30.63KB
 и сравнить его эффективность.
  
 ```
-mysql> create index first_name_index on users (first_name);
-Query OK, 0 rows affected (10.64 sec)
-Records: 0  Duplicates: 0  Warnings: 0
-
-mysql> create index last_name_index on users (last_name);
-Query OK, 0 rows affected (9.76 sec)
-Records: 0  Duplicates: 0  Warnings: 0
-
-mysql> explain select first_name, last_name from users where last_name = "Bb" and first_name = "Aa";
-+----+-------------+-------+------------+------+----------------------------------+-----------------+---------+-------+------+----------+-------------+
-| id | select_type | table | partitions | type | possible_keys                    | key             | key_len | ref   | rows | filtered | Extra       |
-+----+-------------+-------+------------+------+----------------------------------+-----------------+---------+-------+------+----------+-------------+
-|  1 | SIMPLE      | users | NULL       | ref  | last_name_index,first_name_index | last_name_index | 258     | const |    1 |     5.00 | Using where |
-+----+-------------+-------+------------+------+----------------------------------+-----------------+---------+-------+------+----------+-------------+
-
-1 row in set, 1 warning (0.02 sec)
-
-mysql> explain select * from users where first_name = "Ab" ;
-+----+-------------+-------+------------+------+------------------+------------------+---------+-------+------+----------+-------+
-| id | select_type | table | partitions | type | possible_keys    | key              | key_len | ref   | rows | filtered | Extra |
-+----+-------------+-------+------------+------+------------------+------------------+---------+-------+------+----------+-------+
-|  1 | SIMPLE      | users | NULL       | ref  | first_name_index | first_name_index | 258     | const |    1 |   100.00 | NULL  |
-+----+-------------+-------+------------+------+------------------+------------------+---------+-------+------+----------+-------+
+mysql> explain select first_name, last_name from users where last_name LIKE "A%" and first_name LIKE "B%";
++----+-------------+-------+------------+-------+----------------------+-----------+---------+------+-------+----------+------------------------------------+
+| id | select_type | table | partitions | type  | possible_keys        | key       | key_len | ref  | rows  | filtered | Extra                              |
++----+-------------+-------+------------+-------+----------------------+-----------+---------+------+-------+----------+------------------------------------+
+|  1 | SIMPLE      | users | NULL       | range | last_name,first_name | last_name | 258     | NULL | 67546 |     9.90 | Using index condition; Using where |
++----+-------------+-------+------------+-------+----------------------+-----------+---------+------+-------+----------+------------------------------------+
 1 row in set, 1 warning (0.00 sec)
 
-mysql> explain select * from users where last_name = "Ab" ;
-+----+-------------+-------+------------+------+-----------------+-----------------+---------+-------+------+----------+-------+
-| id | select_type | table | partitions | type | possible_keys   | key             | key_len | ref   | rows | filtered | Extra |
-+----+-------------+-------+------------+------+-----------------+-----------------+---------+-------+------+----------+-------+
-|  1 | SIMPLE      | users | NULL       | ref  | last_name_index | last_name_index | 258     | const |    1 |   100.00 | NULL  |
-+----+-------------+-------+------------+------+-----------------+-----------------+---------+-------+------+----------+-------+
+mysql> explain select first_name, last_name from users where last_name LIKE "A%" ;
++----+-------------+-------+------------+-------+---------------+-----------+---------+------+-------+----------+-----------------------+
+| id | select_type | table | partitions | type  | possible_keys | key       | key_len | ref  | rows  | filtered | Extra                 |
++----+-------------+-------+------------+-------+---------------+-----------+---------+------+-------+----------+-----------------------+
+|  1 | SIMPLE      | users | NULL       | range | last_name     | last_name | 258     | NULL | 67546 |   100.00 | Using index condition |
++----+-------------+-------+------------+-------+---------------+-----------+---------+------+-------+----------+-----------------------+
 1 row in set, 1 warning (0.00 sec)
+
+mysql> explain select first_name, last_name from users where first_name LIKE "B%";
++----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+-----------------------+
+| id | select_type | table | partitions | type  | possible_keys | key        | key_len | ref  | rows  | filtered | Extra                 |
++----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+-----------------------+
+|  1 | SIMPLE      | users | NULL       | range | first_name    | first_name | 258     | NULL | 98542 |   100.00 | Using index condition |
++----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+-----------------------+
+1 row in set, 1 warning (0.00 sec)
+
 
 ```
 
