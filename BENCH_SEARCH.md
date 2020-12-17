@@ -34,7 +34,7 @@ genreateName = function ()
 end
 
 request = function()
-   local path = "/api/users/?first_name=" .. genreateName() .. "&" .. "last_name=" .. genreateName()
+   local path = "/api/users/?first_name_prefix=" .. genreateName() .. "&" .. "last_name_prefix=" .. genreateName()
    return wrk.format(nil, path)
 end
 
