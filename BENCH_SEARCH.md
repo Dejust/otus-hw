@@ -502,7 +502,7 @@ explain format = json SELECT * FROM users use index (last_name_index) WHERE last
   "query_block": {
     "select_id": 1,
     "cost_info": {
-      "query_cost": "94565.41"
+      "query_cost": "233176.61"
     },
     "table": {
       "table_name": "users",
@@ -515,15 +515,15 @@ explain format = json SELECT * FROM users use index (last_name_index) WHERE last
         "last_name"
       ],
       "key_length": "258",
-      "rows_examined_per_scan": 67546,
-      "rows_produced_per_join": 6754,
-      "filtered": "10.00",
-      "index_condition": "(`network`.`users`.`last_name` like 'A%')",
+      "rows_examined_per_scan": 166554,
+      "rows_produced_per_join": 18504,
+      "filtered": "11.11",
+      "index_condition": "(`network`.`users`.`last_name` like 'B%')",
       "cost_info": {
-        "read_cost": "93214.49",
-        "eval_cost": "1350.92",
-        "prefix_cost": "94565.41",
-        "data_read_per_join": "11M"
+        "read_cost": "229475.78",
+        "eval_cost": "3700.83",
+        "prefix_cost": "233176.61",
+        "data_read_per_join": "31M"
       },
       "used_columns": [
         "id",
@@ -536,7 +536,7 @@ explain format = json SELECT * FROM users use index (last_name_index) WHERE last
         "interests",
         "gender"
       ],
-      "attached_condition": "(`network`.`users`.`first_name` = 'B%')"
+      "attached_condition": "(`network`.`users`.`first_name` like 'A%')"
     }
   }
 }|
@@ -880,8 +880,30 @@ Transfer/sec:     28.24KB
 
 # Какой индекс выбрать?
 
-Композитный покрывающий индекс хорошо себя показывает, если запрашивается не более чем три поля: id, first_name, last_name. Это связано с тем, что при использовании этого индекса нет необходимости ходить дополнительно в таблицу за данными - все даные уже лежат в индексе. Это идельный индекс для страницы поиска  пользователей, где больше данных и не требуется.
+Композитный покрывающий индекс хорошо себя показывает, если запрашивать не более чем три поля: id, first_name, last_name. Это связано с тем, что при использовании этого индекса нет необходимости ходить дополнительно в таблицу за данными: все даные уже лежат в индексе. Это идельный индекс для страницы поиска  пользователей, где больше данных и не требуется.
 
-Индексу по last_name может быть отдано предпочтение, если потребуется выгружать больше данных. С одной стороны, по эффективности, он сравним с композитным индексом, при этом издержки на его поддержку - меньше.
+Если требуется выгружать больше данных:
 
-Индекс по first_name не рассматривается из-за низкой селективности.
+Композитный индекс. Не имеет смысл применять: пользователей с одинаковыми фамилиями не более чем 20 тысяч:
+
+```
+mysql> select last_name, count(*) as cnt from users group by last_name order by cnt  desc limit 10;
++-----------+-------+
+| last_name | cnt   |
++-----------+-------+
+| Smith     | 21312 |
+| Johnson   | 16894 |
+| Williams  | 13952 |
+| Brown     | 12561 |
+| Jones     | 12272 |
+| Miller    | 10289 |
+| Davis     |  9774 |
+| Garcia    |  7880 |
+| Rodriguez |  7398 |
+| Wilson    |  7190 |
++-----------+-------+
+```
+
+Обычный индекс по last_name выгоднее в том плане, что снижает издержки при обновлении таблицы. Композитный следует применить, если пользователей с одинаковыми фамилиями станет слишком много (1kk?).
+
+Индекс по first_name не рассматривается из-за низкой селективности. Следует использовать только если требуется только поиск по имени.
