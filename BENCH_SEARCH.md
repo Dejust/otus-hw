@@ -430,3 +430,99 @@ Transfer/sec:     29.68KB
 С индексам ситуация лучше. По эффективности оба индекса примерно одинаковы.
 
 ![plot](./Throughput%20(req_seconds).png)
+
+## Сравнение композитного и индекс last_name_index
+
+В случае композитного индекса при выполнении запроса применен именно он. В случае двух индексов - только индекс по last_name. 
+
+Далее представлен детальный explain при использовании обоих индексов.
+
+### Композитный индекс
+
+Применяется только одна часть композитного индекса - last_name. MySQL не использует вторую часть first_name.
+
+
+```
+explain format = json select first_name, last_name from users use index (name_index) where last_name LIKE "A%" and first_name LIKE "B%";
+
+{
+  "query_block": {
+    "select_id": 1,
+    "cost_info": {
+      "query_cost": "34311.05"
+    },
+    "table": {
+      "table_name": "users",
+      "access_type": "range",
+      "possible_keys": [
+        "name_index"
+      ],
+      "key": "name_index",
+      "used_key_parts": [
+        "last_name"
+      ],
+      "key_length": "516",
+      "rows_examined_per_scan": 74184,
+      "rows_produced_per_join": 8241,
+      "filtered": "11.11",
+      "using_index": true,
+      "cost_info": {
+        "read_cost": "32662.68",
+        "eval_cost": "1648.37",
+        "prefix_cost": "34311.05",
+        "data_read_per_join": "14M"
+      },
+      "used_columns": [
+        "first_name",
+        "last_name"
+      ],
+      "attached_condition": "((`network`.`users`.`last_name` like 'A%') and (`network`.`users`.`first_name` like 'B%'))"
+    }
+  }
+}
+```
+
+### Индекс last_name
+
+Применяется индекс по last_name. Эта информация используется для дальнейшей фильтрации по first_name (Index Condition Pushdown).
+
+```
+explain format = json select first_name, last_name from users use index (last_name_index) where last_name LIKE "A%" and first_name LIKE "B%";
+
+
+{
+  "query_block": {
+    "select_id": 1,
+    "cost_info": {
+      "query_cost": "94565.41"
+    },
+    "table": {
+      "table_name": "users",
+      "access_type": "range",
+      "possible_keys": [
+        "last_name"
+      ],
+      "key": "last_name",
+      "used_key_parts": [
+        "last_name"
+      ],
+      "key_length": "258",
+      "rows_examined_per_scan": 67546,
+      "rows_produced_per_join": 7504,
+      "filtered": "11.11",
+      "index_condition": "(`network`.`users`.`last_name` like 'A%')",
+      "cost_info": {
+        "read_cost": "93064.54",
+        "eval_cost": "1500.87",
+        "prefix_cost": "94565.41",
+        "data_read_per_join": "12M"
+      },
+      "used_columns": [
+        "first_name",
+        "last_name"
+      ],
+      "attached_condition": "(`network`.`users`.`first_name` like 'B%')"
+    }
+  }
+}
+```
