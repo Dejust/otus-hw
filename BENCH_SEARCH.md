@@ -91,28 +91,31 @@ WHERE last_name = "Ab%" and first_name = "Bb%"
 Но не покрывает запросы только на имя пользователя.
 
 ```
-mysql> explain select first_name, last_name from users where last_name LIKE "A%" and first_name LIKE "B%";
-+----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+--------------------------+
-| id | select_type | table | partitions | type  | possible_keys | key        | key_len | ref  | rows  | filtered | Extra                    |
-+----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+--------------------------+
-|  1 | SIMPLE      | users | NULL       | range | name_index    | name_index | 516     | NULL | 74184 |    11.11 | Using where; Using index |
-+----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+--------------------------+
+mysql> explain SELECT * FROM users use index (name_index) WHERE last_name LIKE "B%" AND first_name LIKE "A%";
++----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+-----------------------+
+| id | select_type | table | partitions | type  | possible_keys | key        | key_len | ref  | rows   | filtered | Extra                 |
++----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+-----------------------+
+|  1 | SIMPLE      | users | NULL       | range | name_index    | name_index | 516     | NULL | 153624 |    11.11 | Using index condition |
++----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+-----------------------+
 
 
-mysql> explain select first_name, last_name from users where last_name LIKE "A%";
-+----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+--------------------------+
-| id | select_type | table | partitions | type  | possible_keys | key        | key_len | ref  | rows  | filtered | Extra                    |
-+----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+--------------------------+
-|  1 | SIMPLE      | users | NULL       | range | name_index    | name_index | 258     | NULL | 74184 |   100.00 | Using where; Using index |
-+----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+--------------------------+
+mysql> explain SELECT * FROM users use index (name_index) WHERE last_name LIKE "B%";
++----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+-----------------------+
+| id | select_type | table | partitions | type  | possible_keys | key        | key_len | ref  | rows   | filtered | Extra                 |
++----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+-----------------------+
+|  1 | SIMPLE      | users | NULL       | range | name_index    | name_index | 258     | NULL | 153624 |   100.00 | Using index condition |
++----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+-----------------------+
 1 row in set, 1 warning (0.00 sec)
 
-mysql> explain select first_name, last_name from users where first_name LIKE "A%";
-+----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+--------------------------+
-| id | select_type | table | partitions | type  | possible_keys | key        | key_len | ref  | rows   | filtered | Extra                    |
-+----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+--------------------------+
-|  1 | SIMPLE      | users | NULL       | index | NULL          | name_index | 516     | NULL | 995835 |    11.11 | Using where; Using index |
-+----+-------------+-------+------------+-------+---------------+------------+---------+------+--------+----------+--------------------------+
+
+mysql> explain SELECT * FROM users use index (name_index) WHERE first_name LIKE "A%";
++----+-------------+-------+------------+------+---------------+------+---------+------+--------+----------+-------------+
+| id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows   | filtered | Extra       |
++----+-------------+-------+------------+------+---------------+------+---------+------+--------+----------+-------------+
+|  1 | SIMPLE      | users | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 995835 |    11.11 | Using where |
++----+-------------+-------+------------+------+---------------+------+---------+------+--------+----------+-------------+
+1 row in set, 1 warning (0.00 sec)
+
 ``` 
 
 Количество уникальных имен и фамилий:
@@ -266,28 +269,28 @@ Transfer/sec:     30.63KB
 и сравнить его эффективность.
  
 ```
-mysql> explain select first_name, last_name from users where last_name LIKE "A%" and first_name LIKE "B%";
-+----+-------------+-------+------------+-------+----------------------+-----------+---------+------+-------+----------+------------------------------------+
-| id | select_type | table | partitions | type  | possible_keys        | key       | key_len | ref  | rows  | filtered | Extra                              |
-+----+-------------+-------+------------+-------+----------------------+-----------+---------+------+-------+----------+------------------------------------+
-|  1 | SIMPLE      | users | NULL       | range | last_name,first_name | last_name | 258     | NULL | 67546 |     9.90 | Using index condition; Using where |
-+----+-------------+-------+------------+-------+----------------------+-----------+---------+------+-------+----------+------------------------------------+
+mysql> explain SELECT * FROM users use index (last_name) WHERE last_name LIKE "B%" AND first_name LIKE "A%";
++----+-------------+-------+------------+-------+---------------+-----------+---------+------+--------+----------+------------------------------------+
+| id | select_type | table | partitions | type  | possible_keys | key       | key_len | ref  | rows   | filtered | Extra                              |
++----+-------------+-------+------------+-------+---------------+-----------+---------+------+--------+----------+------------------------------------+
+|  1 | SIMPLE      | users | NULL       | range | last_name     | last_name | 258     | NULL | 166554 |    11.11 | Using index condition; Using where |
++----+-------------+-------+------------+-------+---------------+-----------+---------+------+--------+----------+------------------------------------+
 1 row in set, 1 warning (0.00 sec)
 
-mysql> explain select first_name, last_name from users where last_name LIKE "A%" ;
-+----+-------------+-------+------------+-------+---------------+-----------+---------+------+-------+----------+-----------------------+
-| id | select_type | table | partitions | type  | possible_keys | key       | key_len | ref  | rows  | filtered | Extra                 |
-+----+-------------+-------+------------+-------+---------------+-----------+---------+------+-------+----------+-----------------------+
-|  1 | SIMPLE      | users | NULL       | range | last_name     | last_name | 258     | NULL | 67546 |   100.00 | Using index condition |
-+----+-------------+-------+------------+-------+---------------+-----------+---------+------+-------+----------+-----------------------+
+mysql> explain SELECT * FROM users use index (last_name) WHERE last_name LIKE "B%";
++----+-------------+-------+------------+-------+---------------+-----------+---------+------+--------+----------+-----------------------+
+| id | select_type | table | partitions | type  | possible_keys | key       | key_len | ref  | rows   | filtered | Extra                 |
++----+-------------+-------+------------+-------+---------------+-----------+---------+------+--------+----------+-----------------------+
+|  1 | SIMPLE      | users | NULL       | range | last_name     | last_name | 258     | NULL | 166554 |   100.00 | Using index condition |
++----+-------------+-------+------------+-------+---------------+-----------+---------+------+--------+----------+-----------------------+
 1 row in set, 1 warning (0.00 sec)
 
-mysql> explain select first_name, last_name from users where first_name LIKE "B%";
-+----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+-----------------------+
-| id | select_type | table | partitions | type  | possible_keys | key        | key_len | ref  | rows  | filtered | Extra                 |
-+----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+-----------------------+
-|  1 | SIMPLE      | users | NULL       | range | first_name    | first_name | 258     | NULL | 98542 |   100.00 | Using index condition |
-+----+-------------+-------+------------+-------+---------------+------------+---------+------+-------+----------+-----------------------+
+mysql> explain SELECT * FROM users use index (last_name) WHERE first_name LIKE "A%";
++----+-------------+-------+------------+------+---------------+------+---------+------+--------+----------+-------------+
+| id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows   | filtered | Extra       |
++----+-------------+-------+------------+------+---------------+------+---------+------+--------+----------+-------------+
+|  1 | SIMPLE      | users | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 995835 |    11.11 | Using where |
++----+-------------+-------+------------+------+---------------+------+---------+------+--------+----------+-------------+
 1 row in set, 1 warning (0.00 sec)
 
 
@@ -441,15 +444,14 @@ Transfer/sec:     29.68KB
 
 Применяется только одна часть композитного индекса - last_name. MySQL не использует вторую часть first_name.
 
-
 ```
-explain format = json select first_name, last_name from users use index (name_index) where last_name LIKE "A%" and first_name LIKE "B%";
-
-{
+explain format = json SELECT * FROM users use index (name_index) WHERE last_name LIKE "B%" AND first_name LIKE "A%";
+ 
+| {
   "query_block": {
     "select_id": 1,
     "cost_info": {
-      "query_cost": "34311.05"
+      "query_cost": "215074.61"
     },
     "table": {
       "table_name": "users",
@@ -462,24 +464,30 @@ explain format = json select first_name, last_name from users use index (name_in
         "last_name"
       ],
       "key_length": "516",
-      "rows_examined_per_scan": 74184,
-      "rows_produced_per_join": 8241,
+      "rows_examined_per_scan": 153624,
+      "rows_produced_per_join": 17067,
       "filtered": "11.11",
-      "using_index": true,
+      "index_condition": "((`network`.`users`.`last_name` like 'B%') and (`network`.`users`.`first_name` like 'A%'))",
       "cost_info": {
-        "read_cost": "32662.68",
-        "eval_cost": "1648.37",
-        "prefix_cost": "34311.05",
-        "data_read_per_join": "14M"
+        "read_cost": "211661.08",
+        "eval_cost": "3413.53",
+        "prefix_cost": "215074.61",
+        "data_read_per_join": "29M"
       },
       "used_columns": [
+        "id",
         "first_name",
-        "last_name"
-      ],
-      "attached_condition": "((`network`.`users`.`last_name` like 'A%') and (`network`.`users`.`first_name` like 'B%'))"
+        "last_name",
+        "email",
+        "password_hash",
+        "age",
+        "city",
+        "interests",
+        "gender"
+      ]
     }
   }
-}
+} |
 ```
 
 ### Индекс last_name
@@ -487,42 +495,44 @@ explain format = json select first_name, last_name from users use index (name_in
 Применяется индекс по last_name. Эта информация используется для дальнейшей фильтрации по first_name (Index Condition Pushdown).
 
 ```
-explain format = json select first_name, last_name from users use index (last_name_index) where last_name LIKE "A%" and first_name LIKE "B%";
+explain format = json SELECT * FROM users use index (first_name) WHERE last_name LIKE "B%" AND first_name LIKE "A%";
 
 
-{
+| {
   "query_block": {
     "select_id": 1,
     "cost_info": {
-      "query_cost": "94565.41"
+      "query_cost": "204454.00"
     },
     "table": {
       "table_name": "users",
-      "access_type": "range",
+      "access_type": "ALL",
       "possible_keys": [
-        "last_name"
+        "first_name"
       ],
-      "key": "last_name",
-      "used_key_parts": [
-        "last_name"
-      ],
-      "key_length": "258",
-      "rows_examined_per_scan": 67546,
-      "rows_produced_per_join": 7504,
-      "filtered": "11.11",
-      "index_condition": "(`network`.`users`.`last_name` like 'A%')",
+      "rows_examined_per_scan": 995835,
+      "rows_produced_per_join": 21607,
+      "filtered": "2.17",
       "cost_info": {
-        "read_cost": "93064.54",
-        "eval_cost": "1500.87",
-        "prefix_cost": "94565.41",
-        "data_read_per_join": "12M"
+        "read_cost": "200132.57",
+        "eval_cost": "4321.43",
+        "prefix_cost": "204454.00",
+        "data_read_per_join": "37M"
       },
       "used_columns": [
+        "id",
         "first_name",
-        "last_name"
+        "last_name",
+        "email",
+        "password_hash",
+        "age",
+        "city",
+        "interests",
+        "gender"
       ],
-      "attached_condition": "(`network`.`users`.`first_name` like 'B%')"
+      "attached_condition": "((`network`.`users`.`last_name` like 'B%') and (`network`.`users`.`first_name` like 'A%'))"
     }
   }
-}
+} |
+
 ```
