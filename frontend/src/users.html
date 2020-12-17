@@ -45,8 +45,8 @@
     <div v-for="user in users" :key="user.id" class="row">
         <div class="col-lg-12">
             <a v-bind:href="'/profile.html?userId=' + user.id">#{{ user.id }}
-              <span v-if="user.profile">
-                {{ user.profile.first_name }} {{ user.profile.last_name }}
+              <span v-if="user.first_name">
+                {{ user.first_name }} {{ user.last_name }}
               </span>
               <span v-else>
                 (no profile data)

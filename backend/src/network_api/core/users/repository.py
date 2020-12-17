@@ -58,7 +58,7 @@ class UserRepository:
         return map_user(row)
 
     async def get_all(self, *, criteria: SearchCriteria = default_search_criteria, page: Page = default_page):
-        query = 'SELECT * FROM users'
+        query = 'SELECT id, first_name, last_name FROM users'
 
         criteria = self._search_criteria_to_query(criteria)
         if criteria:
@@ -72,7 +72,7 @@ class UserRepository:
 
         await self._db_cursor.execute(query, params)
         rows = await self._db_cursor.fetchall()
-        return [map_user(row) for row in rows]
+        return rows
 
     def _search_criteria_to_query(self, criteria: SearchCriteria):
         criteria_query = []

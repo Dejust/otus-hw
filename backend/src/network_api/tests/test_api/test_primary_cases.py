@@ -90,8 +90,8 @@ def test_get_users_lists(api_client):
 
     actual_users = response.json()
 
-    actual_profiles = [actual_user['profile'] for actual_user in actual_users]
-    expected_profiles = [user['profile'] for user in users]
+    actual_profiles = [actual_user['first_name'] for actual_user in actual_users]
+    expected_profiles = [user['profile']['first_name'] for user in users]
 
     assert actual_profiles == expected_profiles
 
@@ -221,7 +221,7 @@ def test_search_users(api_client):
 
     response = api_client.get(request)
     assert response.status_code == 200
-    assert response.json()[0]['profile'] == user_a['profile']
+    assert response.json()[0]['first_name'] == user_a['profile']['first_name']
 
 
 def test_users_pagination(api_client):
