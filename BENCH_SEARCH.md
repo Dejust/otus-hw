@@ -495,29 +495,35 @@ explain format = json SELECT * FROM users use index (name_index) WHERE last_name
 Применяется индекс по last_name. Эта информация используется для дальнейшей фильтрации по first_name и извлечения остальной информации (Index Condition Pushdown).
 
 ```
-explain format = json SELECT * FROM users use index (first_name) WHERE last_name LIKE "B%" AND first_name LIKE "A%";
+explain format = json SELECT * FROM users use index (last_name_index) WHERE last_name LIKE "B%" AND first_name LIKE "A%";
 
 
 | {
   "query_block": {
     "select_id": 1,
     "cost_info": {
-      "query_cost": "204454.00"
+      "query_cost": "94565.41"
     },
     "table": {
       "table_name": "users",
-      "access_type": "ALL",
+      "access_type": "range",
       "possible_keys": [
-        "first_name"
+        "last_name_index"
       ],
-      "rows_examined_per_scan": 995835,
-      "rows_produced_per_join": 21607,
-      "filtered": "2.17",
+      "key": "last_name_index",
+      "used_key_parts": [
+        "last_name"
+      ],
+      "key_length": "258",
+      "rows_examined_per_scan": 67546,
+      "rows_produced_per_join": 6754,
+      "filtered": "10.00",
+      "index_condition": "(`network`.`users`.`last_name` like 'A%')",
       "cost_info": {
-        "read_cost": "200132.57",
-        "eval_cost": "4321.43",
-        "prefix_cost": "204454.00",
-        "data_read_per_join": "37M"
+        "read_cost": "93214.49",
+        "eval_cost": "1350.92",
+        "prefix_cost": "94565.41",
+        "data_read_per_join": "11M"
       },
       "used_columns": [
         "id",
@@ -530,10 +536,10 @@ explain format = json SELECT * FROM users use index (first_name) WHERE last_name
         "interests",
         "gender"
       ],
-      "attached_condition": "((`network`.`users`.`last_name` like 'B%') and (`network`.`users`.`first_name` like 'A%'))"
+      "attached_condition": "(`network`.`users`.`first_name` = 'B%')"
     }
   }
-} |
+}|
 
 ```
 
