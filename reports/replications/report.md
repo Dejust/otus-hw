@@ -4,6 +4,29 @@
 
 Для мониторинга выбран https://hub.docker.com/r/netdata/netdata. Был добавлен сервис в docker-compose.yaml.
 
+## Нагрузочное тестирование до репликации
+
+Выбраны запрос: поиск по имени и фамилии. Для того, чтобы нагрузить диск, был выполнен отказ от покрывающего индекса.
+
+```
+wrk -s bench_search.lua -d 30s -t 4 -c 50 --timeout 30s --latency http://localhost:8083/
+```
+
+### CPU
+
+![plot](./img/master_cpu_before.jpg)
+
+
+### Memory
+
+![plot](./img/master_memory_before.jpg)
+
+
+### DISK
+
+![plot](./img/master_disk_before.jpg)
+
+
 ## Настраиваем асинхронную репликацию
 
 
