@@ -8,11 +8,12 @@ from jwt import PyJWTError
 from pydantic import BaseModel
 
 from network_api import jwt
-from network_api.api.deps import setup_db, close_db, get_users_repository, get_friends_repository
+from network_api.api.deps import setup_db, close_db, get_users_repository, get_friends_repository, get_user_view
 from network_api.core.friends.models import Friend
 from network_api.core.friends.repository import FriendsRepository
 from network_api.core.users.models import Credentials, Profile, User, SearchCriteria, Page
 from network_api.core.users.repository import UserRepository
+from network_api.core.users.views import UserView
 
 auth = APIRouter()
 users = APIRouter()
@@ -83,7 +84,7 @@ async def get_users(
     last_name_prefix: Optional[str] = Query(default=None, max_length=255),
     limit: Optional[int] = Query(default=10, ge=0, le=20),
     offset: Optional[int] = Query(default=0, ge=0, le=20),
-    users_repository: UserRepository = Depends(get_users_repository)
+    users_repository: UserView = Depends(get_user_view)
 ) -> List[User]:
     criteria = SearchCriteria(first_name_prefix=first_name_prefix, last_name_prefix=last_name_prefix)
     page = Page(limit=limit, offset=offset)

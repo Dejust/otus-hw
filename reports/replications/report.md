@@ -83,18 +83,29 @@ Query OK, 0 rows affected (0.01 sec)
 
 ## Настройка слейва
 
-1. Был добавлен новый сервис db_slave с настройками
+0. 
+
+Был сделан snapshot данных мастера
+
+```
+docker-compose exec db mysqldump --all-databases --master-data > dbdump.db 
+```
+
+1. Был добавлен новый сервис db_slave с настройками.
+
+Был также включен binary log, так как далее планируется эксперимент с переключением слейва как мастера.
 
 ```txt
 [mysqld]
 server-id=21
+log-bin=mysql-bin
 ```
 
 
 2. Мастер установлен в качестве источника данных 
 
 ```
-mysql> CHANGE MASTER TO MASTER_HOST='db', MASTER_USER='rep1', MASTER_PASSWORD='123456', MASTER_LOG_FILE='mysql-bin.000003', MASTER_LOG_POS=595;
+mysql> CHANGE MASTER TO MASTER_HOST='db', MASTER_USER='rep1', MASTER_PASSWORD='123456', MASTER_LOG_FILE='mysql-bin.000004', MASTER_LOG_POS=609;
 
 mysql> SHOW SLAVE STATUS\G
 *************************** 1. row ***************************
@@ -145,3 +156,40 @@ mysql> select * from test;
 +----+
 3 rows in set (0.00 sec)
 ```
+
+## Нагрузочное тестирование после репликации
+
+Выбраны запрос: поиск по имени и фамилии. Для того, чтобы нагрузить диск, был выполнен отказ от покрывающего индекса.
+
+```
+wrk -s bench_search.lua -d 30s -t 4 -c 50 --timeout 30s --latency http://localhost:8083/
+```
+
+### CPU (MASTER)
+
+![plot](./img/master_cpu_after.jpg)
+
+
+### Memory (MASTER)
+
+![plot](./img/master_memory_after.jpg)
+
+
+### DISK (MASTER)
+
+![plot](./img/master_disk_after.jpg)
+
+
+### CPU (SLAVE)
+
+![plot](./img/slave_cpu.jpg)
+
+
+### Memory (SLAVE)
+
+![plot](./img/slave_memory.jpg)
+
+
+### DISK (SLAVE)
+
+![plot](./img/slave_disk.jpg)

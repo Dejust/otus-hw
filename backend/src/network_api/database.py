@@ -16,6 +16,19 @@ async def create_pool() -> aiomysql.Pool:
     return pool
 
 
+async def create_readonly_pool() -> aiomysql.Pool:
+    pool = await aiomysql.create_pool(
+        host=config.RO_DB_HOST,
+        port=config.RO_DB_PORT,
+        user=config.RO_DB_USER,
+        password=config.RO_DB_PASSWORD,
+        db=config.RO_DB_NAME,
+        autocommit=True
+    )
+
+    return pool
+
+
 async def create_tables(db_cursor: aiomysql.Cursor, *, reset=False):
     if reset:
         await drop_tables(db_cursor)
