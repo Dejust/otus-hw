@@ -193,3 +193,82 @@ wrk -s bench_search.lua -d 30s -t 4 -c 50 --timeout 30s --latency http://localho
 ### DISK (SLAVE)
 
 ![plot](./img/slave_disk.jpg)
+
+
+## Включить row-based replication
+
+Выставим binlog_format=ROW на мастере и на слейве. После перезапуска сервера, убедились, что репликация продолжает работать.
+
+## Проверка
+
+```
+mysql> SHOW GLOBAL VARIABLES LIKE 'binlog_format';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| binlog_format | ROW   |
++---------------+-------+
+1 row in set (0.01 sec)
+```
+
+## Обзор binlog (RBR)
+
+```
+> update test2 set id = 50000;
+```
+
+```
+mysqlbinlog --base64-output=DECODE-ROWS -vv mysql-bin.000006
+
+
+#201227 13:07:50 server id 1  end_log_pos 686 CRC32 0x2dfb7f65 	Update_rows: table id 108 flags: STMT_END_F
+### UPDATE `network`.`test2`
+### WHERE
+###   @1=100 /* INT meta=0 nullable=1 is_null=0 */
+### SET
+###   @1=50000 /* INT meta=0 nullable=1 is_null=0 */
+### UPDATE `network`.`test2`
+### WHERE
+###   @1=1000 /* INT meta=0 nullable=1 is_null=0 */
+### SET
+###   @1=50000 /* INT meta=0 nullable=1 is_null=0 */
+### UPDATE `network`.`test2`
+### WHERE
+###   @1=1000 /* INT meta=0 nullable=1 is_null=0 */
+### SET
+###   @1=50000 /* INT meta=0 nullable=1 is_null=0 */
+### UPDATE `network`.`test2`
+### WHERE
+###   @1=1000 /* INT meta=0 nullable=1 is_null=0 */
+### SET
+###   @1=50000 /* INT meta=0 nullable=1 is_null=0 */
+### UPDATE `network`.`test2`
+### WHERE
+###   @1=5000 /* INT meta=0 nullable=1 is_null=0 */
+### SET
+###   @1=50000 /* INT meta=0 nullable=1 is_null=0 */
+
+```
+
+## Обзор binlog (SBR)
+
+```
+mysql> SHOW GLOBAL VARIABLES LIKE 'binlog_format';
++---------------+-----------+
+| Variable_name | Value     |
++---------------+-----------+
+| binlog_format | STATEMENT |
+```
+
+```
+mysqlbinlog --base64-output=DECODE-ROWS -vv mysql-bin.000007
+
+
+# at 304
+#201227 13:10:30 server id 1  end_log_pos 411 CRC32 0xe9cab265 	Query	thread_id=2	exec_time=0	error_code=0
+use `network`/*!*/;
+SET TIMESTAMP=1609074630/*!*/;
+update test2 set id = 25000
+/*!*/;
+
+```
