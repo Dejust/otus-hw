@@ -213,9 +213,25 @@ mysql> SHOW GLOBAL VARIABLES LIKE 'binlog_format';
 
 ## Обзор binlog (RBR)
 
+Убедились, что binlogformat = ROW
+
+```
+mysql> SHOW GLOBAL VARIABLES LIKE 'binlog_format';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| binlog_format | ROW   |
++---------------+-------+
+1 row in set (0.01 sec)
+```
+
+Обновили таблицу:
+
 ```
 > update test2 set id = 50000;
 ```
+
+В логе, ожидаемо, лежит несколько записей:
 
 ```
 mysqlbinlog --base64-output=DECODE-ROWS -vv mysql-bin.000006
@@ -252,14 +268,26 @@ mysqlbinlog --base64-output=DECODE-ROWS -vv mysql-bin.000006
 
 ## Обзор binlog (SBR)
 
+Убедились, что binlogformat = STATEMENT
 ```
 mysql> SHOW GLOBAL VARIABLES LIKE 'binlog_format';
 +---------------+-----------+
 | Variable_name | Value     |
 +---------------+-----------+
 | binlog_format | STATEMENT |
++---------------+-------+
+1 row in set (0.01 sec)
 ```
 
+Обновлена таблица
+
+```
+> insert into test2 (id) values (50);
+> update test2 set id = 25000;
+```
+
+
+В логе, ожидаемо, лежит одна команда.
 ```
 mysqlbinlog --base64-output=DECODE-ROWS -vv mysql-bin.000007
 
