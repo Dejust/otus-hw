@@ -19,6 +19,19 @@ services:
     image: mysql:5.7.32
     env_file:
       - backend/compose/dev/db.env
+    volumes:
+      - ./backend/compose/db/master:/etc/mysql/conf.d
+
+    restart: always
+    cpus: 1.0
+    mem_limit: "268435456"
+
+  db_slave:
+    image: mysql:5.7.32
+    env_file:
+      - backend/compose/dev/db.env
+    volumes:
+      - ./backend/compose/db/slave_1:/etc/mysql/conf.d
     restart: always
     cpus: 1.0
     mem_limit: "268435456"
