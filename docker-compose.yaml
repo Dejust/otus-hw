@@ -1,27 +1,65 @@
-version: '3'
+version: '2.2'
 services:
   api:
+    command: "uvicorn network_api.asgi:app --limit-concurrency 50 --lifespan on --host 0.0.0.0 --port 8080"
     build:
       context: backend
       dockerfile: compose/Dockerfile
 
     volumes:
       - ./backend/src:/var/lib/network-api/src
-    ports:
-      - ${DEV_API_PORT:-8082}:8080
 
     env_file:
       - backend/compose/dev/app.env
+    restart: always
+    cpus: 1.0
+    mem_limit: "67108864"
 
   db:
     image: mysql:5.7.32
     env_file:
       - backend/compose/dev/db.env
+    restart: always
+    cpus: 1.0
+    mem_limit: "268435456"
 
   frontend:
+    restart: always
+    depends_on:
+      - api
     image: nginx:1.18.0-alpine
     ports:
-      - ${DEV_FRONTEND_PORT:-8083}:80
+      - 8083:80
     volumes:
       - ./frontend/src:/usr/share/nginx/html:ro
       - ./frontend/compose/default.conf:/etc/nginx/conf.d/default.conf
+    cpus: 1.0
+    mem_limit: "67108864"
+
+  netdata:
+    cpus: 1.0
+    mem_limit: "67108864"
+    image: netdata/netdata
+    container_name: netdata
+    hostname: example.com # set to fqdn of host
+    ports:
+      - 19999:19999
+    restart: unless-stopped
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - netdataconfig:/etc/netdata
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+
+volumes:
+  netdataconfig:
+  netdatalib:
+  netdatacache:
