@@ -386,3 +386,14 @@ mysql> select * from  mysql.gtid_executed limit 5;
 gtid_mode=ON
 enforce_gtid_consistency=ON
 ```
+
+## Добавить 2-ой слейв.
+
+Для простоты, решено было поднять стенд с нуля.
+
+
+```
+docker-compose up -d db db_slave_1 db_slave_2
+```
+
+В качестве теста на запись: создание пользователей по одному.
