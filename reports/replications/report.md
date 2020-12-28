@@ -6,7 +6,7 @@
 
 ## Нагрузочное тестирование до репликации
 
-Выбраны запрос: поиск по имени и фамилии. Для того, чтобы нагрузить диск, был выполнен отказ от покрывающего индекса.
+Выбран запрос: поиск по имени и фамилии.
 
 ```
 wrk -s bench_search.lua -d 30s -t 4 -c 50 --timeout 30s --latency http://localhost:8083/
@@ -34,9 +34,11 @@ wrk -s bench_search.lua -d 30s -t 4 -c 50 --timeout 30s --latency http://localho
 
 1. В конфигурации мастера добавлено
 
+```
 [mysqld]
 server-id=1
 log-bin=mysql-bin
+```
 
 2. Мастер был запущен
 
@@ -83,12 +85,11 @@ Query OK, 0 rows affected (0.01 sec)
 
 ## Настройка слейва
 
-0. 
-
-Был сделан snapshot данных мастера
+0. Начальное обновление данных мастера и слейва
 
 ```
-docker-compose exec db mysqldump --all-databases --master-data > dbdump.db 
+$ docker-compose exec db mysqldump --all-databases --master-data > dbdump.db 
+$ docker-compose exec -T db_slave_1 mysql < dbdump.db 
 ```
 
 1. Был добавлен новый сервис db_slave с настройками.
@@ -100,7 +101,6 @@ docker-compose exec db mysqldump --all-databases --master-data > dbdump.db
 server-id=21
 log-bin=mysql-bin
 ```
-
 
 2. Мастер установлен в качестве источника данных 
 
