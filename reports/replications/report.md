@@ -289,7 +289,7 @@ update test2 set id = 25000
 
 ```
 
-## Включит GTID
+## Включить GTID
 
 https://dev.mysql.com/doc/refman/5.7/en/replication-mode-change-online-enable-gtids.html
 
@@ -302,7 +302,7 @@ SET @@GLOBAL.ENFORCE_GTID_CONSISTENCY = WARN;
 После чего, согласно документации, я убедился, что в логах нет предупреждение. Приложение генерирует
 простейшие запросы, поэтому ничего не должно противоречить GTID based replication.
 
-На мастере и слейве выполнить. Все транзанкции, что противоречат GTID, будут отклонены.
+На мастере и слейве выполнить. Все транзакции, что противоречат GTID, будут отклонены.
 
 ```
 SET @@GLOBAL.ENFORCE_GTID_CONSISTENCY = ON;
@@ -327,7 +327,7 @@ SET @@GLOBAL.GTID_MODE = OFF_PERMISSIVE;
 
 На мастере и слейве выполнить
 
-Новые транзакции - GTID. Реплицированные могут быть как GTID так и анонимными.
+Новые транзакции - GTID. Реплицированные транзакции могут быть как GTID, так и анонимными.
 
 ```
 SET @@GLOBAL.GTID_MODE = ON_PERMISSIVE;
@@ -446,7 +446,7 @@ mysql> SHOW STATUS LIKE 'Rpl_semi_sync%';
 
 ```
 
-На слейвах. Был установлен пплагин как для мастера, так и для слейва: для целей эксперимента - один из слейвов должен стать мастером.
+На слейвах. Был установлен плагин как для мастера, так и для слейва: для целей эксперимента - один из слейвов должен стать мастером.
 
 ```
 mysql> INSTALL PLUGIN rpl_semi_sync_slave SONAME 'semisync_slave.so';
@@ -501,7 +501,7 @@ mysql> SHOW STATUS LIKE 'Rpl_semi_sync%';
 
 ## Нагрузка на запись
 
-Был запущен скрипт для генерации анект:
+Был запущен скрипт для генерации анкет:
 
 ```
 docker-compose run --rm api python -m network_api.commands.generate_fake_users
