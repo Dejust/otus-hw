@@ -199,19 +199,7 @@ wrk -s bench_search.lua -d 30s -t 4 -c 50 --timeout 30s --latency http://localho
 
 Выставим binlog_format=ROW на мастере и на слейве. После перезапуска сервера, убедились, что репликация продолжает работать.
 
-## Проверка
-
-```
-mysql> SHOW GLOBAL VARIABLES LIKE 'binlog_format';
-+---------------+-------+
-| Variable_name | Value |
-+---------------+-------+
-| binlog_format | ROW   |
-+---------------+-------+
-1 row in set (0.01 sec)
-```
-
-## Обзор binlog (RBR)
+### Обзор binlog (RBR)
 
 Убедились, что binlogformat = ROW
 
@@ -234,7 +222,7 @@ mysql> SHOW GLOBAL VARIABLES LIKE 'binlog_format';
 В логе, ожидаемо, лежит несколько записей:
 
 ```
-mysqlbinlog --base64-output=DECODE-ROWS -vv mysql-bin.000006
+$ mysqlbinlog --base64-output=DECODE-ROWS -vv mysql-bin.000006
 
 
 #201227 13:07:50 server id 1  end_log_pos 686 CRC32 0x2dfb7f65 	Update_rows: table id 108 flags: STMT_END_F
@@ -266,7 +254,7 @@ mysqlbinlog --base64-output=DECODE-ROWS -vv mysql-bin.000006
 
 ```
 
-## Обзор binlog (SBR)
+### Обзор binlog (SBR)
 
 Убедились, что binlogformat = STATEMENT
 ```
@@ -289,7 +277,7 @@ mysql> SHOW GLOBAL VARIABLES LIKE 'binlog_format';
 
 В логе, ожидаемо, лежит одна команда.
 ```
-mysqlbinlog --base64-output=DECODE-ROWS -vv mysql-bin.000007
+$ mysqlbinlog --base64-output=DECODE-ROWS -vv mysql-bin.000007
 
 
 # at 304
@@ -299,4 +287,102 @@ SET TIMESTAMP=1609074630/*!*/;
 update test2 set id = 25000
 /*!*/;
 
+```
+
+## Включит GTID
+
+https://dev.mysql.com/doc/refman/5.7/en/replication-mode-change-online-enable-gtids.html
+
+На мастере и слейве выполнить:
+
+```
+SET @@GLOBAL.ENFORCE_GTID_CONSISTENCY = WARN;
+```
+
+После чего, согласно документации, я убедился, что в логах нет предупреждение. Приложение генерирует
+простейшие запросы, поэтому ничего не должно противоречить GTID based replication.
+
+На мастере и слейве выполнить. Все транзанкции, что противоречат GTID, будут отклонены.
+
+```
+SET @@GLOBAL.ENFORCE_GTID_CONSISTENCY = ON;
+```
+
+Действительно, не работает...
+https://dev.mysql.com/doc/refman/5.7/en/replication-options-gtids.html
+```
+mysql> begin;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> create temporary table x2 (id integer);
+ERROR 1787 (HY000): Statement violates GTID consistency: CREATE TEMPORARY TABLE and DROP TEMPORARY TABLE can only be executed outside transactional context.  These statements are also not allowed in a function or trigger because functions and triggers are also considered to be multi-statement transactions.
+```
+
+На мастере и слейве выполнить:
+
+новые транзакции будут анонимными. реплицированные транзакции могут быть как GTID так и анонимными
+```
+SET @@GLOBAL.GTID_MODE = OFF_PERMISSIVE;
+```
+
+На мастере и слейве выполнить
+
+Новые транзакции - GTID. Реплицированные могут быть как GTID так и анонимными.
+
+```
+SET @@GLOBAL.GTID_MODE = ON_PERMISSIVE;
+```
+
+Убеждаемся, что анонимных транзакций более нет (на мастере и слейве)
+
+```
+mysql> SHOW STATUS LIKE 'ONGOING_ANONYMOUS_TRANSACTION_COUNT';
++-------------------------------------+-------+
+| Variable_name                       | Value |
++-------------------------------------+-------+
+| Ongoing_anonymous_transaction_count | 0     |
++-------------------------------------+-------+
+1 row in set (0.00 sec)
+```
+
+Включаем GTID на каждом сервере
+
+```
+SET @@GLOBAL.GTID_MODE = ON;
+
+----
+db_1          | 2020-12-28T09:43:13.934739Z 6 [Note] Changed ENFORCE_GTID_CONSISTENCY from OFF to WARN.
+db_1          | 2020-12-28T09:48:53.131850Z 6 [Note] Changed ENFORCE_GTID_CONSISTENCY from WARN to ON.
+db_1          | 2020-12-28T09:51:34.735272Z 6 [Note] Changed GTID_MODE from OFF to OFF_PERMISSIVE.
+db_1          | 2020-12-28T09:52:36.905136Z 6 [Note] Changed GTID_MODE from OFF_PERMISSIVE to ON_PERMISSIVE.
+db_1          | 2020-12-28T09:54:37.445995Z 6 [Note] Changed GTID_MODE from ON_PERMISSIVE to ON.
+
+
+db_slave_1_1  | 2020-12-28T09:43:16.067636Z 5 [Note] Changed ENFORCE_GTID_CONSISTENCY from OFF to WARN.
+db_slave_1_1  | 2020-12-28T09:48:49.293475Z 5 [Note] Changed ENFORCE_GTID_CONSISTENCY from WARN to ON.
+db_slave_1_1  | 2020-12-28T09:51:36.991689Z 5 [Note] Changed GTID_MODE from OFF to OFF_PERMISSIVE.
+db_slave_1_1  | 2020-12-28T09:52:34.593487Z 5 [Note] Changed GTID_MODE from OFF_PERMISSIVE to ON_PERMISSIVE.
+db_slave_1_1  | 2020-12-28T09:54:35.357892Z 5 [Note] Changed GTID_MODE from ON_PERMISSIVE to ON.
+```
+
+Список выполненных GTID транзакций
+
+```
+mysql> select * from  mysql.gtid_executed limit 5;
++--------------------------------------+----------------+--------------+
+| source_uuid                          | interval_start | interval_end |
++--------------------------------------+----------------+--------------+
+| b357c92d-482a-11eb-aa69-0242ac170002 |              1 |            1 |
+| b357c92d-482a-11eb-aa69-0242ac170002 |              2 |            2 |
+| b357c92d-482a-11eb-aa69-0242ac170002 |              3 |            3 |
+| b357c92d-482a-11eb-aa69-0242ac170002 |              4 |            4 |
+| b357c92d-482a-11eb-aa69-0242ac170002 |              5 |            5 |
++--------------------------------------+----------------+--------------+
+```
+
+В cnf файл мастера и слейва добавлено:
+
+```
+gtid_mode=ON
+enforce_gtid_consistency=ON
 ```
