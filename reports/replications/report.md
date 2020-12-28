@@ -396,4 +396,168 @@ enforce_gtid_consistency=ON
 docker-compose up -d db db_slave_1 db_slave_2
 ```
 
-В качестве теста на запись: создание пользователей по одному.
+## Настройка полу-синхронной репликацию
+
+На мастере:
+
+```
+mysql> INSTALL PLUGIN rpl_semi_sync_master SONAME 'semisync_master.so';
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> SELECT PLUGIN_NAME, PLUGIN_STATUS
+    ->        FROM INFORMATION_SCHEMA.PLUGINS
+    ->        WHERE PLUGIN_NAME LIKE '%semi%';
++----------------------+---------------+
+| PLUGIN_NAME          | PLUGIN_STATUS |
++----------------------+---------------+
+| rpl_semi_sync_master | ACTIVE        |
++----------------------+---------------+
+1 row in set (0.01 sec)
+
+mysql> SET GLOBAL rpl_semi_sync_master_enabled = 1;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> SET GLOBAL rpl_semi_sync_master_timeout = 1000;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> create table test (id integer null);
+Query OK, 0 rows affected (0.02 sec)
+
+mysql> SHOW STATUS LIKE 'Rpl_semi_sync%';
++--------------------------------------------+-------+
+| Variable_name                              | Value |
++--------------------------------------------+-------+
+| Rpl_semi_sync_master_clients               | 2     |
+| Rpl_semi_sync_master_net_avg_wait_time     | 0     |
+| Rpl_semi_sync_master_net_wait_time         | 0     |
+| Rpl_semi_sync_master_net_waits             | 2     |
+| Rpl_semi_sync_master_no_times              | 0     |
+| Rpl_semi_sync_master_no_tx                 | 0     |
+| Rpl_semi_sync_master_status                | ON    |
+| Rpl_semi_sync_master_timefunc_failures     | 0     |
+| Rpl_semi_sync_master_tx_avg_wait_time      | 187   |
+| Rpl_semi_sync_master_tx_wait_time          | 187   |
+| Rpl_semi_sync_master_tx_waits              | 1     |
+| Rpl_semi_sync_master_wait_pos_backtraverse | 0     |
+| Rpl_semi_sync_master_wait_sessions         | 0     |
+| Rpl_semi_sync_master_yes_tx                | 1     |
++--------------------------------------------+-------+
+14 rows in set (0.00 sec)
+
+```
+
+На слейвах. Был установлен пплагин как для мастера, так и для слейва: для целей эксперимента - один из слейвов должен стать мастером.
+
+```
+mysql> INSTALL PLUGIN rpl_semi_sync_slave SONAME 'semisync_slave.so';
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> INSTALL PLUGIN rpl_semi_sync_master SONAME 'semisync_master.so';
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> SELECT PLUGIN_NAME, PLUGIN_STATUS
+    ->        FROM INFORMATION_SCHEMA.PLUGINS
+    ->        WHERE PLUGIN_NAME LIKE '%semi%';
++----------------------+---------------+
+| PLUGIN_NAME          | PLUGIN_STATUS |
++----------------------+---------------+
+| rpl_semi_sync_slave  | ACTIVE        |
+| rpl_semi_sync_master | ACTIVE        |
++----------------------+---------------+
+2 rows in set (0.00 sec)
+
+mysql> SET GLOBAL rpl_semi_sync_slave_enabled = 1;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> STOP SLAVE IO_THREAD;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> START SLAVE IO_THREAD;
+Query OK, 0 rows affected (0.00 sec)
+
+
+mysql> SHOW STATUS LIKE 'Rpl_semi_sync%';
++--------------------------------------------+-------+
+| Variable_name                              | Value |
++--------------------------------------------+-------+
+| Rpl_semi_sync_master_clients               | 0     |
+| Rpl_semi_sync_master_net_avg_wait_time     | 0     |
+| Rpl_semi_sync_master_net_wait_time         | 0     |
+| Rpl_semi_sync_master_net_waits             | 0     |
+| Rpl_semi_sync_master_no_times              | 0     |
+| Rpl_semi_sync_master_no_tx                 | 0     |
+| Rpl_semi_sync_master_status                | OFF   |
+| Rpl_semi_sync_master_timefunc_failures     | 0     |
+| Rpl_semi_sync_master_tx_avg_wait_time      | 0     |
+| Rpl_semi_sync_master_tx_wait_time          | 0     |
+| Rpl_semi_sync_master_tx_waits              | 0     |
+| Rpl_semi_sync_master_wait_pos_backtraverse | 0     |
+| Rpl_semi_sync_master_wait_sessions         | 0     |
+| Rpl_semi_sync_master_yes_tx                | 0     |
+| Rpl_semi_sync_slave_status                 | ON    |
++--------------------------------------------+-------+
+15 rows in set (0.00 sec)
+```
+
+## Нагрузка на запись
+
+Был запущен скрипт для генерации анект:
+
+```
+docker-compose run --rm api python -m network_api.commands.generate_fake_users
+```
+
+Который, до убийства мастера, успел создать `22462` анкет.
+
+Которые успешно разъехались по всем слейвам. Без потерь транзакций.
+
+```
+mysql> select count(*) from users;
++----------+
+| count(*) |
++----------+
+|    22462 |
++----------+
+```
+
+Переключаем `db_slave_2` на `db_slave_1`
+
+```
+mysql> STOP SLAVE IO_THREAD;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> CHANGE MASTER TO MASTER_HOST='db_slave_1', MASTER_USER='rep1', MASTER_PASSWORD='123456', MASTER_LOG_FILE='mysql-bin.000003', MASTER_LOG_POS=649;
+Query OK, 0 rows affected, 2 warnings (0.01 sec)
+
+mysql> START SLAVE IO_THREAD;
+Query OK, 0 rows affected (0.00 sec)
+```
+
+Проверяем, что репликация работает:
+
+новый мастер:
+
+```
+mysql> insert into test (id) values (1000);
+Query OK, 1 row affected (0.05 sec)
+
+mysql> select count(*) from test;
++----------+
+| count(*) |
++----------+
+|        1 |
++----------+
+1 row in set (0.00 sec)
+```
+
+на слейве:
+
+```
+mysql> select count(*) from test;
++----------+
+| count(*) |
++----------+
+|        1 |
++----------+
+1 row in set (0.00 sec)
+```
